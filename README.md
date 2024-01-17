@@ -1,41 +1,65 @@
-# FlamesCoAdblock-
-Friendly Adblocker updated somewhat
-# FlamesCo Adblock
+#!/bin/bash
 
-FlamesCo Adblock is a simple yet effective ad-blocking solution for web browsers.
+# Flames Co. Adblock - 3.0 [C] GPT-X by FlamesLabs
+# Blocks general, 18+ ads, regional ads, and Google supercookies.
 
-## Overview
+# Detect the operating system
+OS=$(uname)
+if [ "$OS" == "Darwin" ] || [ "$OS" == "Linux" ]; then
+    HOSTS_FILE="/etc/hosts"
+elif [ "$OS" == "MINGW64_NT-10.0" ]; then
+    HOSTS_FILE="/c/Windows/System32/drivers/etc/hosts"
+else
+    echo "Unsupported operating system: $OS"
+    exit 1
+fi
 
-FlamesCo Adblock helps users enhance their browsing experience by blocking unwanted advertisements on websites. It is designed to be lightweight, easy to use, and customizable.
+# URLs of various blocklists
+BLOCKLIST_URLS=(
+    "https://raw.githubusercontent.com/Cats-Team/AdRules/master/AdRules" # Chinese region ad blocklist
+    "https://raw.githubusercontent.com/hoshsadiq/adblock-nocoin-list/master/hosts.txt" # NoCoin ad blocklist
+    # Add more URLs as needed
+)
 
-## Features
+# Google supercookie domains
+GOOGLE_SUPERCOOKIES_DOMAINS=(
+    "www.google.com"
+    "www.google-analytics.com"
+    "www.googletagmanager.com"
+    # Add more Google supercookie domains as needed
+)
 
-- **Efficient Ad Blocking**: Blocks intrusive ads, pop-ups, and banners.
-- **Customizable Filters**: Tailor your ad-blocking experience with customizable filters.
-- **Easy Integration**: Seamless integration with popular web browsers.
-- **Open Source**: FlamesCo Adblock is open-source, giving users the flexibility to contribute and improve the project.
+echo "Starting Flames Co. Adblock - 3.0..."
 
-## Installation
+# Backup the original hosts file
+sudo cp $HOSTS_FILE "${HOSTS_FILE}.bak"
 
-To use FlamesCo Adblock, follow these simple steps:
+# Function to download and append blocklists
+append_blocklist() {
+    local url=$1
+    {
+        echo "# Begin blocklist from $url"
+        curl -s $url | grep -v "^#" | grep -v "^$" 
+        echo "# End blocklist from $url"
+    } | sudo tee -a $HOSTS_FILE
+}
 
-1. Download the latest release from the [Releases](https://github.com/FlamesCo/FlamesCoAdblock-/releases) page.
-2. Install the extension in your preferred web browser.
-3. Enjoy an ad-free browsing experience!
+# Append each blocklist to the hosts file
+for url in "${BLOCKLIST_URLS[@]}"
+do
+    append_blocklist $url
+done
 
-## Contributing
+# Function to block Google supercookies
+block_google_supercookies() {
+    local domain=$1
+    echo "0.0.0.0 $domain" | sudo tee -a $HOSTS_FILE
+}
 
-We welcome contributions! If you'd like to contribute to FlamesCo Adblock, please follow our [Contribution Guidelines](CONTRIBUTING.md).
+# Block each Google supercookie domain
+for google_domain in "${GOOGLE_SUPERCOOKIES_DOMAINS[@]}"
+do
+    block_google_supercookies $google_domain
+done
 
-## License
-
-FlamesCo Adblock is licensed under the [MIT License](LICENSE).
-
-## Support
-
-If you encounter any issues or have questions, please [open an issue](https://github.com/FlamesCo/FlamesCoAdblock-/issues).
-
-## Acknowledgments
-
-We would like to thank our contributors for their valuable input and support.
-
+echo "Blocklists integrated, hosts file updated, and Google supercookies blocked."
